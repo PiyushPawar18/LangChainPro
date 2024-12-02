@@ -1,5 +1,7 @@
-faiss_cpu==1.8.0.post1
-groq==0.13.0
-langchain==0.3.9
-sentence_transformers==3.0.1
 streamlit==1.36.0
+pickle-mixin==1.0.2
+faiss-cpu==1.7.3
+sentence-transformers==2.2.2
+langchain==0.0.200
+groq==0.1.0
+apikey==0.1.0
