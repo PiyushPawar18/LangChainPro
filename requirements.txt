@@ -3,7 +3,7 @@ faiss-cpu==1.7.3
 sentence-transformers==2.2.2
 langchain==0.0.100
 langchain-community==0.0.1
-groq==0.1.0
+groq==0.13.0  # Updated to the latest version
 pickle-mixin==1.0.2
-requests==2.28.1  # For handling API requests or URL fetching
-pandas==1.5.3    # For handling data (optional, if you use dataframes)
+requests==2.28.1
+pandas==1.5.3
