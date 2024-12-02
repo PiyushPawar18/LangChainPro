@@ -6,3 +6,4 @@ groq==0.13.0   # Latest working version of groq (make sure this matches your API
 pickle-mixin==1.0.2
 requests==2.28.1
 pandas==1.5.3
+faiss-cpu==1.7.3
