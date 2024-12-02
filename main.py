@@ -1,12 +1,12 @@
 import streamlit as st
 import pickle
 import os
-import faiss
 from sentence_transformers import SentenceTransformer
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import UnstructuredURLLoader
 from apikey import GROQ_API_KEY  # Ensure this file contains the correct API key
 from groq import Groq
+from sklearn.neighbors import NearestNeighbors  # Import NearestNeighbors from scikit-learn
 
 # Streamlit UI Setup
 st.title("News Research Tool 📈")
@@ -18,7 +18,7 @@ for i in range(3):
     urls.append(url)
 
 process_url_clicked = st.sidebar.button("Process URLs")
-file_path = "faiss_store.pkl"
+file_path = "vectorstore.pkl"
 
 main_placeholder = st.empty()
 
@@ -53,20 +53,21 @@ if process_url_clicked:
         embeddings = model.encode(texts)
         main_placeholder.text("Embedding Vector Started Building...✅✅✅")
 
-        # Create FAISS index and add embeddings
-        index = faiss.IndexFlatL2(embeddings.shape[1])
-        index.add(embeddings)
+        # Use NearestNeighbors from scikit-learn instead of FAISS
+        index = NearestNeighbors(n_neighbors=5, metric='cosine')
+        index.fit(embeddings)
+        
         vectorstore = {
             "index": index,
             "texts": texts,
             "metadata": [doc.metadata for doc in docs]
         }
 
-        # Save the FAISS index to a pickle file
+        # Save the vectorstore to a pickle file
         with open(file_path, "wb") as f:
             pickle.dump(vectorstore, f)
 
-        st.success("URLs processed and FAISS index created successfully!")
+        st.success("URLs processed and index created successfully!")
     except Exception as e:
         st.error(f"Error during processing: {e}")
 
@@ -80,10 +81,9 @@ if query:
                 texts = vectorstore["texts"]
                 metadata = vectorstore["metadata"]
 
-                # Retrieve top 5 relevant documents
-                model = SentenceTransformer('paraphrase-MiniLM-L6-v2', cache_folder="models")
+                # Retrieve top 5 relevant documents using NearestNeighbors
                 query_embedding = model.encode([query])
-                distances, indices = index.search(query_embedding, k=5)
+                distances, indices = index.kneighbors(query_embedding, n_neighbors=5)
                 retrieved_docs = [texts[i] for i in indices[0]]
 
                 # Construct context for Groq completion
@@ -109,6 +109,6 @@ if query:
                 for doc in retrieved_docs:
                     st.write(doc)
         else:
-            st.warning("FAISS index file not found. Process URLs first!")
+            st.warning("Vectorstore file not found. Process URLs first!")
     except Exception as e:
         st.error(f"Error during question answering: {e}")
