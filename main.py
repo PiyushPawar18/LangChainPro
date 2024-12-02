@@ -91,23 +91,25 @@ if query:
 
                 # Get answer from Groq
                 chat_completion = client.chat.completions.create(
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": f"Context: {context}\n\nQuestion: {query}",
-                        }
-                    ],
+                    messages=[{
+                        "role": "user",
+                        "content": f"Context: {context}\n\nQuestion: {query}",
+                    }],
                     model="llama3-8b-8192"
                 )
-                result = chat_completion.choices[0].message.content
 
-                st.header("Answer")
-                st.write(result)
+                # Check if the response contains the expected result
+                if chat_completion.choices:
+                    result = chat_completion.choices[0].message.content
+                    st.header("Answer")
+                    st.write(result)
 
-                # Display sources
-                st.subheader("Sources:")
-                for doc in retrieved_docs:
-                    st.write(doc)
+                    # Display sources
+                    st.subheader("Sources:")
+                    for doc in retrieved_docs:
+                        st.write(doc)
+                else:
+                    st.warning("No valid response from Groq API.")
         else:
             st.warning("FAISS index file not found. Process URLs first!")
     except Exception as e:
