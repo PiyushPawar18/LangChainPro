@@ -5,11 +5,16 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import UnstructuredURLLoader
-from apikey import GROQ_API_KEY  # Ensure this file contains the correct API key
+from apikey import GROQ_API_KEY
 from groq import Groq
 from sklearn.metrics.pairwise import cosine_similarity
+import nltk
+import warnings
 
-# Streamlit UI Setup
+# Download NLTK data
+nltk.download('punkt')
+warnings.filterwarnings("ignore", category=SyntaxWarning)
+
 st.title("News Research Tool 📈")
 st.sidebar.title("News Article URLs")
 
@@ -19,12 +24,11 @@ for i in range(3):
     urls.append(url)
 
 process_url_clicked = st.sidebar.button("Process URLs")
-
 main_placeholder = st.empty()
 
 # Initialize Groq Client
 try:
-    client = Groq(api_key=GROQ_API_KEY)  # Ensure compatibility with Groq library
+    client = Groq(api_key=GROQ_API_KEY)
 except AttributeError as e:
     st.error(f"Groq client initialization error: {e}. Check the library version.")
     st.stop()
@@ -34,8 +38,14 @@ except Exception as e:
 
 if process_url_clicked:
     try:
+        # Validate URLs
+        valid_urls = [url for url in urls if url.startswith("http")]
+        if not valid_urls:
+            st.error("Please provide valid URLs that start with http or https.")
+            st.stop()
+
         # Load data from URLs
-        loader = UnstructuredURLLoader(urls=urls)
+        loader = UnstructuredURLLoader(urls=valid_urls)
         main_placeholder.text("Data Loading...Started...✅✅✅")
         data = loader.load()
 
@@ -53,14 +63,12 @@ if process_url_clicked:
         embeddings = model.encode(texts)
         main_placeholder.text("Embedding Vector Started Building...✅✅✅")
 
-        # Save the embeddings and texts for later retrieval
+        # Save embeddings and texts
         vectorstore = {
             "embeddings": embeddings,
             "texts": texts,
             "metadata": [doc.metadata for doc in docs]
         }
-
-        # Save the data to a pickle file
         with open("vectorstore.pkl", "wb") as f:
             pickle.dump(vectorstore, f)
 
@@ -76,18 +84,14 @@ if query:
                 vectorstore = pickle.load(f)
                 embeddings = vectorstore["embeddings"]
                 texts = vectorstore["texts"]
-                
+
                 # Get query embedding
                 query_embedding = model.encode([query])
-                
-                # Calculate cosine similarity between query embedding and document embeddings
                 similarities = cosine_similarity(query_embedding, embeddings)
-                top_indices = similarities.argsort()[0][-5:][::-1]  # Top 5 relevant documents
-                
-                # Retrieve the top 5 documents
-                retrieved_docs = [texts[i] for i in top_indices]
+                top_indices = similarities.argsort()[0][-5:][::-1]
 
-                # Construct context for Groq completion
+                # Retrieve top documents
+                retrieved_docs = [texts[i] for i in top_indices]
                 context = "\n".join(retrieved_docs)
 
                 # Get answer from Groq
@@ -102,8 +106,6 @@ if query:
 
                 st.header("Answer")
                 st.write(result)
-
-                # Display sources
                 st.subheader("Sources:")
                 for doc in retrieved_docs:
                     st.write(doc)
